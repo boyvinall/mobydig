@@ -11,28 +11,35 @@ dpkg -l | awk '{print $2}' > /tmp/resources/pkg-list-pre.txt
 apt-get update
 apt-get --yes install \
   bc \
+  bison \
   build-essential \
   cmake \
   curl \
   diffutils \
+  dwarves \
+  flex \
   git \
   kmod \
   libcurl4-openssl-dev \
+  libelf-dev \
+  python3 \
+  rsync \
   wget
 
 #-------------------------------------------------------------------------------
 # build
 #-------------------------------------------------------------------------------
 export KERNELVER=$(uname -r  | cut -d '-' -f 1)
+export KERNELMAJOR=$(echo $KERNELVER | cut -d. -f1)
 export KERNELDIR=/linux-$KERNELVER
 
 cd /
-curl -L -o linux-${KERNELVER}.tar.gz https://www.kernel.org/pub/linux/kernel/v4.x/linux-${KERNELVER}.tar.gz
+curl -L -o linux-${KERNELVER}.tar.gz https://www.kernel.org/pub/linux/kernel/v${KERNELMAJOR}.x/linux-${KERNELVER}.tar.gz
 tar zxf linux-${KERNELVER}.tar.gz
 cd linux-${KERNELVER}
 zcat /proc/1/root/proc/config.gz > .config
-make modules_prepare
-make headers_install INSTALL_HDR_PATH=/usr
+make -j $(nproc) headers_install INSTALL_HDR_PATH=/usr
+make -j $(nproc) modules
 mv .config ../config
 cd ..
 git clone https://github.com/draios/sysdig.git
@@ -43,16 +50,13 @@ cd build
 cmake ..
 KERNELDIR=/linux-$KERNELVER make driver -j $(nproc)
 make curl -j $(nproc)
-make jq -j $(nproc)
-make b64 -j $(nproc)
 make ncurses -j $(nproc)
 make sysdig -j $(nproc)
 make csysdig -j $(nproc)
 strip userspace/sysdig/sysdig
 strip userspace/sysdig/csysdig
 make install
-mv driver/sysdig-probe.ko \
-   /usr/lib/modules-load.d/
+mv driver/scap.ko /
 
 #-------------------------------------------------------------------------------
 # cleanup

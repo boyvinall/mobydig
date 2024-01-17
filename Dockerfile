@@ -1,4 +1,4 @@
-FROM ubuntu:16.04
+FROM ubuntu:22.04
 MAINTAINER Foucault de Bonneval <foucault(at)commit.ninja>
 
 
